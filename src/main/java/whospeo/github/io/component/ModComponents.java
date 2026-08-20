@@ -16,4 +16,8 @@ public class ModComponents {
                     .build()
 
     );
+
+    private ModComponents() {}
+
+    public static void init() {}
 }

@@ -10,8 +10,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import whospeo.github.io.component.ModComponents;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public final class RustTickHandler {
     private RustTickHandler() {}
+
+    private static final Map<UUID, Integer> LIVE_COUNTDOWN = new HashMap<>();
 
     private static int currentBaseTicks(ServerPlayer player) {
         Level level = player.level();
@@ -78,17 +84,23 @@ public final class RustTickHandler {
 
             RustData data = stack.getOrDefault(ModComponents.RUST_DATA, RustData.initial());
 
-            if (baseTicks < 0) {
-                baseTicks = currentBaseTicks(player);
+            if (!stack.has(ModComponents.RUST_DATA)){
+                stack.set(ModComponents.RUST_DATA, data);
             }
 
-            RustData updated = data.tick(1);
+            int live = LIVE_COUNTDOWN.getOrDefault(data.id(), data.tickUntilNextStage());
+            live -= 1;
 
-            if (updated.tickUntilNextStage() <= 0) {
-                updated = updated.advanceStage(baseTicks);
+            if (live <= 0) {
+                int newBaseTicks = currentBaseTicks(player);
+                RustData updated = data.advanceStage(newBaseTicks);
+                LIVE_COUNTDOWN.put(data.id(), updated.tickUntilNextStage());
+                stack.set(ModComponents.RUST_DATA, updated);
             }
 
-            stack.set(ModComponents.RUST_DATA, updated);
+            else {
+                LIVE_COUNTDOWN.put(data.id(), live);
+            }
         }
     }
 
